@@ -20,86 +20,114 @@ $appt_stmt = $conn->prepare("
 $appt_stmt->bind_param("i", $doctor_id);
 $appt_stmt->execute();
 $appointments = $appt_stmt->get_result();
+
+$rows = [];
+$counts = ['All' => 0, 'Pending' => 0, 'Confirmed' => 0, 'Completed' => 0, 'Cancelled' => 0];
+while ($r = $appointments->fetch_assoc()) {
+    $rows[] = $r;
+    $counts['All']++;
+    $counts[$r['status']]++;
+}
+
+function status_badge($status) {
+    $map = [
+        'Pending'   => 'badge-pending',
+        'Confirmed' => 'badge-confirmed',
+        'Completed' => 'badge-completed',
+        'Cancelled' => 'badge-cancelled',
+    ];
+    $class = $map[$status] ?? 'badge-pending';
+    return "<span class=\"badge $class\">" . htmlspecialchars($status) . "</span>";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Appointments - MediCore</title>
+    <title>My Appointments - MediCore</title>
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <style>
         .modal-overlay {
             display: none;
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(20,50,42,0.45);
             align-items: center; justify-content: center;
             z-index: 999;
         }
         .modal-box {
             background: #fff;
             padding: 24px;
-            border-radius: 8px;
+            border-radius: 10px;
             width: 600px;
             max-height: 80vh;
             overflow-y: auto;
         }
-        .modal-close {
-            float: right;
-            cursor: pointer;
-            font-size: 18px;
-            color: #777;
-        }
-        select.status-select {
-            padding: 5px 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        .status-msg {
-            font-size: 12px;
-            margin-left: 6px;
-        }
+        .modal-close { float: right; cursor: pointer; font-size: 18px; color: #888; }
     </style>
 </head>
 <body>
     <?php require 'nav.php'; ?>
+    <main class="page-content">
+        <div class="page-header">
+            <div>
+                <h1>My Appointments</h1>
+                <p class="subtitle">Review, approve, or update patient appointments</p>
+            </div>
+        </div>
 
-    <div class="page-content">
-        <h1>My Appointments</h1>
+        <div class="tab-bar" id="tabBar">
+            <?php foreach ($counts as $label => $c): ?>
+                <button class="tab-btn <?php echo $label === 'All' ? 'active' : ''; ?>" data-filter="<?php echo $label; ?>">
+                    <?php echo $label; ?> <span class="count"><?php echo $c; ?></span>
+                </button>
+            <?php endforeach; ?>
+        </div>
 
-        <?php if ($appointments->num_rows === 0): ?>
+        <?php if (count($rows) === 0): ?>
             <p class="empty-msg">No appointments assigned yet.</p>
         <?php else: ?>
-        <table>
+        <table id="apptTable">
             <tr>
                 <th>Patient</th>
                 <th>Date &amp; Time</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Action</th>
             </tr>
-            <?php while ($row = $appointments->fetch_assoc()): ?>
-            <tr id="appt-row-<?php echo $row['appointment_id']; ?>">
-                <td><?php echo htmlspecialchars($row['patient_name']); ?></td>
-                <td><?php echo date('d M Y, h:i A', strtotime($row['appointment_date'])); ?></td>
+            <?php foreach ($rows as $row): ?>
+            <tr id="appt-row-<?php echo $row['appointment_id']; ?>" data-status="<?php echo $row['status']; ?>">
                 <td>
-                    <select class="status-select" data-appointment-id="<?php echo $row['appointment_id']; ?>" onchange="updateStatus(this)">
-                        <?php foreach (['Pending', 'Confirmed', 'Completed', 'Cancelled'] as $s): ?>
-                            <option value="<?php echo $s; ?>" <?php echo $s === $row['status'] ? 'selected' : ''; ?>><?php echo $s; ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <span class="status-msg" id="status-msg-<?php echo $row['appointment_id']; ?>"></span>
+                    <div class="avatar-cell">
+                        <div class="avatar-round"><?php echo strtoupper(substr($row['patient_name'],0,2)); ?></div>
+                        <?php echo htmlspecialchars($row['patient_name']); ?>
+                    </div>
                 </td>
+                <td><?php echo date('M d, Y - h:i A', strtotime($row['appointment_date'])); ?></td>
+                <td id="status-cell-<?php echo $row['appointment_id']; ?>"><?php echo status_badge($row['status']); ?></td>
                 <td>
-                    <a class="btn" href="#" onclick="openHistory(<?php echo $row['patient_id']; ?>); return false;">History</a>
-                    <a class="btn" href="create-prescription.php?appointment_id=<?php echo $row['appointment_id']; ?>&patient_id=<?php echo $row['patient_id']; ?>">Prescribe</a>
-                    <a class="btn" href="request-lab-test.php?appointment_id=<?php echo $row['appointment_id']; ?>&patient_id=<?php echo $row['patient_id']; ?>">Request Lab Test</a>
+                    <div id="actions-<?php echo $row['appointment_id']; ?>" style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <?php if ($row['status'] === 'Pending'): ?>
+                            <button class="btn btn-sm btn-approve" onclick="updateStatus(<?php echo $row['appointment_id']; ?>, 'Confirmed')">Approve</button>
+                            <button class="btn btn-sm btn-reject" onclick="updateStatus(<?php echo $row['appointment_id']; ?>, 'Cancelled')">Reject</button>
+                        <?php elseif ($row['status'] === 'Confirmed'): ?>
+                            <button class="btn btn-sm btn-done" onclick="updateStatus(<?php echo $row['appointment_id']; ?>, 'Completed')">Mark as Done</button>
+                        <?php else: ?>
+                            <span style="color:var(--text-muted); font-size:12px;">&mdash;</span>
+                        <?php endif; ?>
+                    </div>
+                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <a class="btn btn-sm btn-outline" href="#" onclick="openHistory(<?php echo $row['patient_id']; ?>); return false;">History</a>
+                        <a class="btn btn-sm btn-outline" href="create-prescription.php?appointment_id=<?php echo $row['appointment_id']; ?>&patient_id=<?php echo $row['patient_id']; ?>">Prescribe</a>
+                        <a class="btn btn-sm btn-outline" href="request-lab-test.php?appointment_id=<?php echo $row['appointment_id']; ?>&patient_id=<?php echo $row['patient_id']; ?>">Lab Test</a>
+                    </div>
                 </td>
             </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </table>
         <?php endif; ?>
-    </div>
+    </main>
+    </div><!-- /.main -->
+    </div><!-- /.app-shell -->
 
-   
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box">
             <span class="modal-close" onclick="closeHistory()">&times;</span>
@@ -109,16 +137,43 @@ $appointments = $appt_stmt->get_result();
 
     <script>
        
-        function updateStatus(selectEl) {
-            const appointmentId = selectEl.dataset.appointmentId;
-            const newStatus = selectEl.value;
-            const msgEl = document.getElementById('status-msg-' + appointmentId);
+        document.querySelectorAll('.tab-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                var filter = btn.dataset.filter;
+                document.querySelectorAll('#apptTable tr[data-status]').forEach(function (row) {
+                    row.style.display = (filter === 'All' || row.dataset.status === filter) ? '' : 'none';
+                });
+            });
+        });
 
-            msgEl.textContent = 'Saving...';
-            msgEl.style.color = '#777';
+      
+        var badgeClass = {
+            'Pending': 'badge-pending',
+            'Confirmed': 'badge-confirmed',
+            'Completed': 'badge-completed',
+            'Cancelled': 'badge-cancelled'
+        };
 
-            const params = "appointment_id=" + encodeURIComponent(appointmentId) +
-                           "&status=" + encodeURIComponent(newStatus);
+        function renderActions(appointmentId, status) {
+            var actionsEl = document.getElementById('actions-' + appointmentId);
+            if (status === 'Pending') {
+                actionsEl.innerHTML =
+                    '<button class="btn btn-sm btn-approve" onclick="updateStatus(' + appointmentId + ', \'Confirmed\')">Approve</button>' +
+                    '<button class="btn btn-sm btn-reject" onclick="updateStatus(' + appointmentId + ', \'Cancelled\')">Reject</button>';
+            } else if (status === 'Confirmed') {
+                actionsEl.innerHTML =
+                    '<button class="btn btn-sm btn-done" onclick="updateStatus(' + appointmentId + ', \'Completed\')">Mark as Done</button>';
+            } else {
+                actionsEl.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">&mdash;</span>';
+            }
+        }
+
+        
+        function updateStatus(appointmentId, newStatus) {
+            var params = "appointment_id=" + encodeURIComponent(appointmentId) +
+                         "&status=" + encodeURIComponent(newStatus);
 
             var xhr = new XMLHttpRequest();
             xhr.open("POST", "../ajax/update_appointment_status.php", true);
@@ -129,24 +184,23 @@ $appointments = $appt_stmt->get_result();
                     if (xhr.status === 200) {
                         var data = JSON.parse(xhr.responseText);
                         if (data.success) {
-                            msgEl.textContent = 'Saved';
-                            msgEl.style.color = '#1e7e34';
+                            var cell = document.getElementById('status-cell-' + appointmentId);
+                            cell.innerHTML = '<span class="badge ' + badgeClass[newStatus] + '">' + newStatus + '</span>';
+                            var row = document.getElementById('appt-row-' + appointmentId);
+                            row.dataset.status = newStatus;
+                            renderActions(appointmentId, newStatus);
                         } else {
-                            msgEl.textContent = data.error || 'Failed';
-                            msgEl.style.color = '#c0392b';
+                            alert(data.error || 'Update failed.');
                         }
                     } else {
-                        msgEl.textContent = 'Network error';
-                        msgEl.style.color = '#c0392b';
+                        alert('Network error. Please try again.');
                     }
-                    setTimeout(function () { msgEl.textContent = ''; }, 2000);
                 }
             };
-
             xhr.send(params);
         }
 
-     
+        
         function openHistory(patientId) {
             const modal = document.getElementById('historyModal');
             const content = document.getElementById('historyContent');
@@ -157,11 +211,7 @@ $appointments = $appt_stmt->get_result();
             xhr.open("GET", "../ajax/get_patient_history.php?patient_id=" + patientId, true);
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        content.innerHTML = xhr.responseText;
-                    } else {
-                        content.innerHTML = '<p class="error-msg">Failed to load history.</p>';
-                    }
+                    content.innerHTML = (xhr.status === 200) ? xhr.responseText : '<p class="error-msg">Failed to load history.</p>';
                 }
             };
             xhr.send();
