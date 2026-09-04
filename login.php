@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $log->execute();
             $_SESSION['auth_id'] = $log->insert_id;
 
-            // Redirect based on role 
+            // Redirect based on role
             $redirect_map = [
                 'Doctor'       => 'doctor/dashboard.php',
                 'Receptionist' => 'receptionist/dashboard.php',
@@ -56,12 +56,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MediCore - Login</title>
-    <link rel="stylesheet" href="assets/css/auth.css">
+    <!-- <link rel="stylesheet" href="assets/css/auth.css"> -->
+     <link rel="stylesheet" href="assets/css/auth.css?v=2">
 </head>
 <body>
     <div class="auth-box">
-        <h2>MediCore Login</h2>
+        <div class="auth-brand">
+            <div class="logo-circle">🩺</div>
+            <h1>MediCore</h1>
+            <p>Hospital Management System</p>
+        </div>
+
+        <h2>Log in to your account</h2>
 
         <?php if ($error): ?>
             <p class="error-msg"><?php echo htmlspecialchars($error); ?></p>
@@ -74,16 +82,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="login.php">
-            <label>Email</label>
-            <input type="email" name="email" required>
+            <div>
+                <label>Email</label>
+                <input type="email" name="email" required>
+            </div>
 
-            <label>Password</label>
-            <input type="password" name="password" required>
+            <div>
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
 
-            <button type="submit">Login</button>
+            <button type="submit">Log In</button>
         </form>
 
-        <p>Don't have an account? <a href="register.php">Register here</a></p>
+        <p class="switch-link">Don't have an account? <a href="register.php">Register here</a></p>
     </div>
 </body>
 </html>

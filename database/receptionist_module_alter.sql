@@ -1,9 +1,3 @@
--- =====================================================================
---  MediCore — Receptionist Module: small additive migration
---  Run this ONCE in phpMyAdmin (SQL tab), same rules as before:
---  only ADDS nullable columns, drops/renames/deletes nothing, and does
---  not touch any existing rows. Safe even if the app is already live.
--- =====================================================================
 
 USE medicore;
 

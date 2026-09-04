@@ -28,12 +28,4 @@ function nav_active($page, $current) {
         <a class="logout-link" href="../logout.php">Log Out</a>
     </aside>
 
-    <div class="main">
-        <header class="topbar">
-            <input type="text" class="search" placeholder="Search records, doctors, patients...">
-            <div class="spacer"></div>
-            <div class="doctor-chip">
-                <div class="avatar-sm"><?php echo strtoupper(substr($_SESSION['full_name'], 0, 1)); ?></div>
-                Dr. <?php echo htmlspecialchars($_SESSION['full_name']); ?>
-            </div>
-        </header>
+    
