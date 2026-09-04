@@ -1,71 +1,206 @@
+/* Main Page */
 body {
+    margin: 0;
+    min-height: 100vh;
     font-family: Arial, sans-serif;
-    background: #f4f6f8;
+    background: #eef9f4;
+
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    margin: 0;
+
+    padding: 20px;
 }
 
+
+/* Login / Register Box */
 .auth-box {
-    background: #fff;
-    padding: 32px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    width: 360px;
+    width: 100%;
+    max-width: 420px;
+
+    background: white;
+    padding: 30px;
+
+    border: 1px solid #ddd;
+    border-radius: 10px;
+
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-.auth-box h2 {
-    margin-top: 0;
+
+/* Logo and Title */
+.auth-brand {
     text-align: center;
-    color: #1c6ea4;
+    margin-bottom: 20px;
 }
 
-.auth-box label {
-    display: block;
-    margin-top: 12px;
-    font-size: 14px;
+.logo-circle {
+    width: 55px;
+    height: 55px;
+
+    margin: auto;
+    margin-bottom: 10px;
+
+    background: #128462;
+    color: white;
+
+    border-radius: 15px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 25px;
+}
+
+.auth-brand h1 {
+    margin: 0;
+    font-size: 22px;
     color: #333;
 }
 
+.auth-brand p {
+    margin-top: 5px;
+    color: #777;
+    font-size: 13px;
+}
+
+
+/* Heading */
+.auth-box h2 {
+    text-align: center;
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+
+/* Form */
+.auth-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+
+/* Label */
+.auth-box label {
+    display: block;
+    margin-bottom: 5px;
+
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+
+/* Input and Select */
 .auth-box input,
 .auth-box select {
     width: 100%;
-    padding: 8px;
-    margin-top: 4px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+    padding: 11px;
+
+    border: 1px solid #ddd;
+    border-radius: 7px;
+
+    font-size: 14px;
 }
 
-.auth-box button {
+
+/* Input when clicked */
+.auth-box input:focus,
+.auth-box select:focus {
+    outline: none;
+    border-color: #128462;
+}
+
+
+/* Role Fields */
+.role-fields {
+    background: #e8f7f1;
+
+    border: 1px solid #c9ecdf;
+    border-radius: 8px;
+
+    padding: 12px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+/* Submit Button */
+.auth-box button[type="submit"] {
     width: 100%;
-    margin-top: 20px;
-    padding: 10px;
-    background: #1c6ea4;
-    color: #fff;
+
+    margin-top: 5px;
+    padding: 12px;
+
+    background: #128462;
+    color: white;
+
     border: none;
-    border-radius: 4px;
+    border-radius: 7px;
+
+    font-size: 15px;
+    font-weight: bold;
+
     cursor: pointer;
 }
 
-.auth-box button:hover {
-    background: #155a86;
+
+/* Button Hover */
+.auth-box button[type="submit"]:hover {
+    background: #0e6f52;
 }
 
+
+/* Login / Register Link */
+.switch-link {
+    text-align: center;
+    margin-top: 20px;
+
+    font-size: 14px;
+    color: #777;
+}
+
+.switch-link a {
+    color: #128462;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.switch-link a:hover {
+    text-decoration: underline;
+}
+
+
+/* Error Message */
 .error-msg {
-    color: #c0392b;
     background: #fdecea;
-    padding: 8px;
-    border-radius: 4px;
+    color: #e0524a;
+
+    padding: 10px;
+    border-radius: 7px;
+
+    text-align: center;
     font-size: 14px;
+
+    margin-bottom: 15px;
 }
 
+
+/* Success Message */
 .success-msg {
-    color: #1e7e34;
-    background: #e6f4ea;
-    padding: 8px;
-    border-radius: 4px;
+    background: #e8f7f1;
+    color: #128462;
+
+    padding: 10px;
+    border-radius: 7px;
+
+    text-align: center;
     font-size: 14px;
+
+    margin-bottom: 15px;
 }
