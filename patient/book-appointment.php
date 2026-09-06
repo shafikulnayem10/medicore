@@ -167,7 +167,7 @@ sort($specializations);
     </div>
 
     <script>
-       r
+       
         document.getElementById('doctorSearch').addEventListener('input', filterDoctors);
         document.getElementById('specFilter').addEventListener('change', filterDoctors);
 
@@ -201,43 +201,48 @@ sort($specializations);
         }
 
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
-            e.preventDefault();
+    e.preventDefault();
 
-            var date = document.getElementById('apptDate').value;
-            var time = document.getElementById('apptTime').value;
-            var reason = document.getElementById('apptReason').value.trim();
+    var date = document.getElementById('apptDate').value;
+    var time = document.getElementById('apptTime').value;
+    var reason = document.getElementById('apptReason').value.trim();
 
-            if (!date || !time || !reason) {
-                document.getElementById('bookingMsg').innerHTML = '<p class="error-msg">All fields are required.</p>';
-                return;
-            }
+    if (!date || !time || !reason) {
+        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">All fields are required.</p>';
+        return;
+    }
 
-            var params = "doctor_id=" + encodeURIComponent(selectedDoctorId) +
-                         "&appt_date=" + encodeURIComponent(date) +
-                         "&appt_time=" + encodeURIComponent(time) +
-                         "&reason=" + encodeURIComponent(reason);
+    var params = "doctor_id=" + encodeURIComponent(selectedDoctorId) +
+                 "&appt_date=" + encodeURIComponent(date) +
+                 "&appt_time=" + encodeURIComponent(time) +
+                 "&reason=" + encodeURIComponent(reason);
 
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "../ajax/book_appointment.php", true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "../ajax/book_appointment.php", true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        var data = JSON.parse(xhr.responseText);
-                        if (data.success) {
-                            document.getElementById('bookingMsg').innerHTML = '<p class="success-msg">Appointment requested successfully!</p>';
-                            setTimeout(function () { window.location.href = 'appointments.php'; }, 900);
-                        } else {
-                            document.getElementById('bookingMsg').innerHTML = '<p class="error-msg">' + (data.error || 'Booking failed.') + '</p>';
-                        }
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.success) {
+                        document.getElementById('bookingMsg').innerHTML = '<p style="color:green;">Appointment requested successfully!</p>';
+                        setTimeout(function () { window.location.href = 'appointments.php'; }, 900);
                     } else {
-                        document.getElementById('bookingMsg').innerHTML = '<p class="error-msg">Network error. Please try again.</p>';
+                        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">' + (data.error || 'Booking failed.') + '</p>';
                     }
+                } catch (err) {
+                    console.error("Server Response:", xhr.responseText);
+                    document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Server error occurred. Check console.</p>';
                 }
-            };
-            xhr.send(params);
-        });
+            } else {
+                document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Network error. Please try again.</p>';
+            }
+        }
+    };
+    xhr.send(params);
+});
     </script>
 </body>
 </html>

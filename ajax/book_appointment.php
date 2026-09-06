@@ -15,7 +15,7 @@ if ($doctor_id === 0 || $appt_date === '' || $appt_time === '' || $reason === ''
     exit();
 }
 
-
+// Doctor check
 $doc_check = $conn->prepare("SELECT doctor_id FROM doctor WHERE doctor_id = ?");
 $doc_check->bind_param("i", $doctor_id);
 $doc_check->execute();
@@ -25,18 +25,20 @@ if ($doc_check->get_result()->num_rows === 0) {
 }
 
 
-$datetime = DateTime::createFromFormat('Y-m-d h:i A', $appt_date . ' ' . $appt_time);
-if (!$datetime) {
+$timestamp = strtotime("$appt_date $appt_time");
+if (!$timestamp) {
     echo json_encode(['success' => false, 'error' => 'Invalid date or time.']);
     exit();
 }
-if ($datetime < new DateTime('today')) {
+
+if ($timestamp < strtotime('today')) {
     echo json_encode(['success' => false, 'error' => 'Appointment date cannot be in the past.']);
     exit();
 }
-$appointment_datetime = $datetime->format('Y-m-d H:i:s');
 
+$appointment_datetime = date('Y-m-d H:i:s', $timestamp);
 
+// Patient check
 $pat_stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $pat_stmt->bind_param("i", $_SESSION['user_id']);
 $pat_stmt->execute();
@@ -48,6 +50,7 @@ if (!$patient_row) {
 }
 $patient_id = $patient_row['patient_id'];
 
+// Insert appointment
 $insert_stmt = $conn->prepare("
     INSERT INTO appointment (patient_id, doctor_id, reason, appointment_date, status)
     VALUES (?, ?, ?, ?, 'Pending')

@@ -4,7 +4,6 @@ require_once 'config/db.php';
 
 $error = '';
 
-
 if (isset($_SESSION['user_id'])) {
     header("Location: " . strtolower($_SESSION['user_type']) . "/dashboard.php");
     exit();
@@ -22,13 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
 
-        if (password_verify($password, $user['password'])) {
+       
+        if ($password === $user['password']) {
             // Set session
             $_SESSION['user_id']   = $user['user_id'];
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['user_type'] = $user['user_type'];
 
-           
             $log = $conn->prepare("INSERT INTO authentication (user_id, login_time) VALUES (?, NOW())");
             $log->bind_param("i", $user['user_id']);
             $log->execute();
@@ -58,8 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MediCore - Login</title>
-    <!-- <link rel="stylesheet" href="assets/css/auth.css"> -->
-     <link rel="stylesheet" href="assets/css/auth.css?v=2">
+    <link rel="stylesheet" href="assets/css/auth.css?v=2">
 </head>
 <body>
     <div class="auth-box">
