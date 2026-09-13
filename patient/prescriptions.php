@@ -3,12 +3,14 @@ $required_role = 'Patient';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
 
-$rx_stmt = $conn->prepare("
+
+$stmt = $conn->prepare("
     SELECT pr.prescription_id, pr.medication, pr.instructions, pr.created_at,
            u.full_name AS doctor_name, d.specialization
     FROM prescription pr
@@ -17,9 +19,9 @@ $rx_stmt = $conn->prepare("
     WHERE pr.patient_id = ?
     ORDER BY pr.created_at DESC
 ");
-$rx_stmt->bind_param("i", $patient_id);
-$rx_stmt->execute();
-$prescriptions = $rx_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$prescriptions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,6 +40,7 @@ $prescriptions = $rx_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             </div>
         </div>
 
+      
         <?php if (count($prescriptions) === 0): ?>
             <p class="empty-msg">No prescriptions yet.</p>
         <?php else: ?>
@@ -53,7 +56,7 @@ $prescriptions = $rx_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <tr>
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'],0,2)); ?></div>
+                        <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
                         Dr. <?php echo htmlspecialchars($row['doctor_name']); ?>
                     </div>
                 </td>

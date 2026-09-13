@@ -3,40 +3,47 @@ $required_role = 'Patient';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$patient_row = $stmt->get_result()->fetch_assoc();
-$patient_id = $patient_row['patient_id'];
+$patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
 
 
-$upcoming_stmt = $conn->prepare("
+$stmt = $conn->prepare("
     SELECT COUNT(*) AS c FROM appointment
     WHERE patient_id = ? AND status IN ('Pending', 'Confirmed') AND appointment_date >= NOW()
 ");
-$upcoming_stmt->bind_param("i", $patient_id);
-$upcoming_stmt->execute();
-$upcoming_count = $upcoming_stmt->get_result()->fetch_assoc()['c'];
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$upcoming_count = $stmt->get_result()->fetch_assoc()['c'];
 
-$rx_stmt = $conn->prepare("SELECT COUNT(*) AS c FROM prescription WHERE patient_id = ?");
-$rx_stmt->bind_param("i", $patient_id);
-$rx_stmt->execute();
-$rx_count = $rx_stmt->get_result()->fetch_assoc()['c'];
 
-$unpaid_stmt = $conn->prepare("SELECT COUNT(*) AS c, COALESCE(SUM(amount),0) AS total FROM billing WHERE patient_id = ? AND payment_status = 'Unpaid'");
-$unpaid_stmt->bind_param("i", $patient_id);
-$unpaid_stmt->execute();
-$unpaid_row = $unpaid_stmt->get_result()->fetch_assoc();
+$stmt = $conn->prepare("SELECT COUNT(*) AS c FROM prescription WHERE patient_id = ?");
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$rx_count = $stmt->get_result()->fetch_assoc()['c'];
+
+
+$stmt = $conn->prepare("
+    SELECT COUNT(*) AS c, COALESCE(SUM(amount), 0) AS total
+    FROM billing
+    WHERE patient_id = ? AND payment_status = 'Unpaid'
+");
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$unpaid_row = $stmt->get_result()->fetch_assoc();
 $unpaid_count = $unpaid_row['c'];
 $unpaid_total = $unpaid_row['total'];
 
-$total_stmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointment WHERE patient_id = ?");
-$total_stmt->bind_param("i", $patient_id);
-$total_stmt->execute();
-$total_count = $total_stmt->get_result()->fetch_assoc()['c'];
+
+$stmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointment WHERE patient_id = ?");
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$total_count = $stmt->get_result()->fetch_assoc()['c'];
 
 
-$next_stmt = $conn->prepare("
+$stmt = $conn->prepare("
     SELECT a.appointment_id, a.appointment_date, a.status, a.reason,
            u.full_name AS doctor_name, d.specialization
     FROM appointment a
@@ -46,12 +53,12 @@ $next_stmt = $conn->prepare("
     ORDER BY a.appointment_date ASC
     LIMIT 5
 ");
-$next_stmt->bind_param("i", $patient_id);
-$next_stmt->execute();
-$upcoming_appointments = $next_stmt->get_result();
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$upcoming_appointments = $stmt->get_result();
 
 
-$rx_recent_stmt = $conn->prepare("
+$stmt = $conn->prepare("
     SELECT pr.prescription_id, pr.medication, pr.created_at, u.full_name AS doctor_name
     FROM prescription pr
     JOIN doctor d ON pr.doctor_id = d.doctor_id
@@ -60,19 +67,18 @@ $rx_recent_stmt = $conn->prepare("
     ORDER BY pr.created_at DESC
     LIMIT 5
 ");
-$rx_recent_stmt->bind_param("i", $patient_id);
-$rx_recent_stmt->execute();
-$recent_prescriptions = $rx_recent_stmt->get_result();
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$recent_prescriptions = $stmt->get_result();
+
 
 function status_badge($status) {
-    $map = [
-        'Pending'   => 'badge-pending',
-        'Confirmed' => 'badge-confirmed',
-        'Completed' => 'badge-completed',
-        'Cancelled' => 'badge-cancelled',
-    ];
-    $class = $map[$status] ?? 'badge-pending';
-    return "<span class=\"badge $class\">" . htmlspecialchars($status) . "</span>";
+    $class = 'badge-pending';
+    if ($status === 'Confirmed') $class = 'badge-confirmed';
+    if ($status === 'Completed') $class = 'badge-completed';
+    if ($status === 'Cancelled') $class = 'badge-cancelled';
+
+    return '<span class="badge ' . $class . '">' . htmlspecialchars($status) . '</span>';
 }
 ?>
 <!DOCTYPE html>
@@ -88,13 +94,17 @@ function status_badge($status) {
         <div class="page-header">
             <div>
                 <h1>Welcome, <?php echo htmlspecialchars($_SESSION['full_name']); ?> 👋</h1>
-                <p class="subtitle"><?php echo date('l, F j, Y'); ?> &middot; <?php echo $upcoming_count; ?> upcoming appointment<?php echo $upcoming_count == 1 ? '' : 's'; ?></p>
+                <p class="subtitle">
+                    <?php echo date('l, F j, Y'); ?> &middot;
+                    <?php echo $upcoming_count; ?> upcoming appointment<?php echo $upcoming_count == 1 ? '' : 's'; ?>
+                </p>
             </div>
             <div class="page-actions">
                 <a href="book-appointment.php" class="btn">+ Book Appointment</a>
             </div>
         </div>
 
+       
         <div class="stat-grid">
             <div class="stat-card">
                 <div class="label">Upcoming Appointments</div>
@@ -116,11 +126,14 @@ function status_badge($status) {
         </div>
 
         <div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
+
+           
             <div class="panel" style="flex:2; min-width:340px;">
                 <div class="panel-header">
                     <h2>Upcoming Appointments</h2>
                     <a href="appointments.php">View All &rarr;</a>
                 </div>
+
                 <?php if ($upcoming_appointments->num_rows === 0): ?>
                     <p class="empty-msg">No upcoming appointments. <a href="book-appointment.php">Book one now</a>.</p>
                 <?php else: ?>
@@ -130,7 +143,7 @@ function status_badge($status) {
                     <tr>
                         <td>
                             <div class="avatar-cell">
-                                <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'],0,2)); ?></div>
+                                <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
                                 Dr. <?php echo htmlspecialchars($row['doctor_name']); ?>
                             </div>
                         </td>
@@ -142,18 +155,20 @@ function status_badge($status) {
                 <?php endif; ?>
             </div>
 
+          
             <div class="panel" style="flex:1; min-width:260px;">
                 <div class="panel-header">
                     <h2>Recent Prescriptions</h2>
                     <a href="prescriptions.php">View All &rarr;</a>
                 </div>
+
                 <?php if ($recent_prescriptions->num_rows === 0): ?>
                     <p class="empty-msg">No prescriptions yet.</p>
                 <?php else: ?>
                     <?php while ($row = $recent_prescriptions->fetch_assoc()): ?>
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--mint-card-border);">
                         <div class="avatar-cell">
-                            <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'],0,2)); ?></div>
+                            <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
                             <div>
                                 <div style="font-size:13px; font-weight:600;">Dr. <?php echo htmlspecialchars($row['doctor_name']); ?></div>
                                 <div style="font-size:11px; color:var(--text-muted);"><?php echo date('M j, Y', strtotime($row['created_at'])); ?></div>

@@ -3,32 +3,44 @@ $required_role = 'Patient';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
 
-$bills_stmt = $conn->prepare("
+
+$stmt = $conn->prepare("
     SELECT billing_id, amount, services, payment_status, generated_at
     FROM billing
     WHERE patient_id = ?
     ORDER BY generated_at DESC
 ");
-$bills_stmt->bind_param("i", $patient_id);
-$bills_stmt->execute();
-$bills = $bills_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$bills = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
 
 $total_count = count($bills);
 $paid_count = 0;
 $unpaid_count = 0;
 $outstanding = 0;
-foreach ($bills as $b) {
-    if ($b['payment_status'] === 'Paid') {
+
+foreach ($bills as $bill) {
+    if ($bill['payment_status'] === 'Paid') {
         $paid_count++;
     } else {
         $unpaid_count++;
-        $outstanding += $b['amount'];
+        $outstanding += $bill['amount'];
     }
+}
+
+
+function payment_badge_class($status) {
+    if ($status === 'Paid') {
+        return 'badge-confirmed';
+    }
+    return 'badge-cancelled';
 }
 ?>
 <!DOCTYPE html>
@@ -48,6 +60,7 @@ foreach ($bills as $b) {
             </div>
         </div>
 
+       
         <div class="stat-grid">
             <div class="stat-card">
                 <div class="label">Total Bills</div>
@@ -67,7 +80,8 @@ foreach ($bills as $b) {
             </div>
         </div>
 
-        <?php if (count($bills) === 0): ?>
+     
+        <?php if ($total_count === 0): ?>
             <p class="empty-msg">No bills yet.</p>
         <?php else: ?>
         <table>
@@ -78,13 +92,18 @@ foreach ($bills as $b) {
                 <th>Total Amount</th>
                 <th>Payment Status</th>
             </tr>
-            <?php foreach ($bills as $b): ?>
+            <?php foreach ($bills as $bill): ?>
             <tr>
-                <td>INV-<?php echo str_pad($b['billing_id'], 4, '0', STR_PAD_LEFT); ?></td>
-                <td><?php echo htmlspecialchars($b['services'] ?: '—'); ?></td>
-                <td><?php echo date('M d, Y', strtotime($b['generated_at'])); ?></td>
-                <td>Tk <?php echo number_format($b['amount'], 2); ?></td>
-                <td><span class="badge <?php echo $b['payment_status'] === 'Paid' ? 'badge-confirmed' : 'badge-cancelled'; ?>"><?php echo htmlspecialchars($b['payment_status']); ?></span></td>
+               
+                <td>INV-<?php echo str_pad($bill['billing_id'], 4, '0', STR_PAD_LEFT); ?></td>
+                <td><?php echo htmlspecialchars($bill['services'] ?: '—'); ?></td>
+                <td><?php echo date('M d, Y', strtotime($bill['generated_at'])); ?></td>
+                <td>Tk <?php echo number_format($bill['amount'], 2); ?></td>
+                <td>
+                    <span class="badge <?php echo payment_badge_class($bill['payment_status']); ?>">
+                        <?php echo htmlspecialchars($bill['payment_status']); ?>
+                    </span>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>

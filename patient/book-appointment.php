@@ -3,18 +3,20 @@ $required_role = 'Patient';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
 
-$doctors_stmt = $conn->query("
+
+$doctors_result = $conn->query("
     SELECT d.doctor_id, d.specialization, d.qualification, d.experience, u.full_name
     FROM doctor d
     JOIN user u ON d.user_id = u.user_id
     ORDER BY u.full_name
 ");
-$doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
+$doctors = $doctors_result->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,6 +61,7 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
             </div>
         </div>
 
+      
         <?php if (count($doctors) === 0): ?>
             <p class="empty-msg">No doctors available right now.</p>
         <?php else: ?>
@@ -70,20 +73,20 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
                 <th>Experience</th>
                 <th></th>
             </tr>
-            <?php foreach ($doctors as $d): ?>
+            <?php foreach ($doctors as $doc): ?>
             <tr>
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($d['full_name'], 0, 2)); ?></div>
-                        <?php echo htmlspecialchars($d['full_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($doc['full_name'], 0, 2)); ?></div>
+                        <?php echo htmlspecialchars($doc['full_name']); ?>
                     </div>
                 </td>
-                <td><?php echo htmlspecialchars($d['specialization'] ?: '—'); ?></td>
-                <td><?php echo htmlspecialchars($d['qualification'] ?: '—'); ?></td>
-                <td><?php echo $d['experience'] !== null ? $d['experience'] . ' yrs' : '—'; ?></td>
+                <td><?php echo htmlspecialchars($doc['specialization'] ?: '—'); ?></td>
+                <td><?php echo htmlspecialchars($doc['qualification'] ?: '—'); ?></td>
+                <td><?php echo $doc['experience'] !== null ? $doc['experience'] . ' yrs' : '—'; ?></td>
                 <td>
                     <button class="btn btn-sm"
-                        onclick="openBooking(<?php echo $d['doctor_id']; ?>, '<?php echo htmlspecialchars(addslashes($d['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($d['specialization'])); ?>')">
+                        onclick="openBooking(<?php echo $doc['doctor_id']; ?>, '<?php echo htmlspecialchars(addslashes($doc['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($doc['specialization'])); ?>')">
                         Book Now
                     </button>
                 </td>
@@ -95,6 +98,7 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
     </div>
     </div>
 
+   
     <div class="modal-overlay" id="bookingModal">
         <div class="modal-box">
             <span class="modal-close" onclick="closeBooking()">&times;</span>
@@ -142,13 +146,17 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
     <script>
         var selectedDoctorId = null;
 
+        
         function openBooking(doctorId, doctorName, specialization) {
             selectedDoctorId = doctorId;
+
             document.getElementById('modalDoctorInfo').innerHTML =
                 '<strong>Dr. ' + doctorName + '</strong><br>' + specialization;
+
             document.getElementById('bookingMsg').innerHTML = '';
             document.getElementById('bookingForm').reset();
 
+          
             var today = new Date().toISOString().split('T')[0];
             document.getElementById('apptDate').min = today;
 
@@ -159,13 +167,15 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
             document.getElementById('bookingModal').style.display = 'none';
         }
 
+    
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
-            e.preventDefault();
+            e.preventDefault(); 
 
             var date = document.getElementById('apptDate').value;
             var time = document.getElementById('apptTime').value;
             var reason = document.getElementById('apptReason').value.trim();
 
+            
             if (!date || !time || !reason) {
                 document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">All fields are required.</p>';
                 return;
@@ -181,25 +191,31 @@ $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        try {
-                            var data = JSON.parse(xhr.responseText);
-                            if (data.success) {
-                                document.getElementById('bookingMsg').innerHTML = '<p style="color:green;">Appointment requested successfully!</p>';
-                                setTimeout(function () { window.location.href = 'appointments.php'; }, 900);
-                            } else {
-                                document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">' + (data.error || 'Booking failed.') + '</p>';
-                            }
-                        } catch (err) {
-                            console.error("Server Response:", xhr.responseText);
-                            document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Server error occurred. Check console.</p>';
+                if (xhr.readyState !== 4) return;
+
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+
+                        if (data.success) {
+                            document.getElementById('bookingMsg').innerHTML = '<p style="color:green;">Appointment requested successfully!</p>';
+                         
+                            setTimeout(function () {
+                                window.location.href = 'appointments.php';
+                            }, 900);
+                        } else {
+                            document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">' + (data.error || 'Booking failed.') + '</p>';
                         }
-                    } else {
-                        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Network error. Please try again.</p>';
+                    } catch (err) {
+                    
+                        console.error("Server Response:", xhr.responseText);
+                        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Server error occurred. Check console.</p>';
                     }
+                } else {
+                    document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Network error. Please try again.</p>';
                 }
             };
+
             xhr.send(params);
         });
     </script>
