@@ -117,7 +117,7 @@ $my_requests = $my_requests_stmt->get_result();
                            "&notes=" + encodeURIComponent(form.notes.value);
 
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "../ajax/submit_lab_test.php", true);
+            xhr.open("POST", "../ajax/submit_lab_test_request.php", true);
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onreadystatechange = function () {

@@ -89,7 +89,7 @@ function status_badge($status) {
     <main class="page-content">
         <div class="page-header">
             <div>
-                <h1>Good morning, Dr. <?php echo htmlspecialchars($_SESSION['full_name']); ?> 👋</h1>
+                <h1>Good morning, <?php echo htmlspecialchars($_SESSION['full_name']); ?> </h1>
                 <p class="subtitle"><?php echo date('l, F j, Y'); ?> &middot; <?php echo $today_count; ?> appointment<?php echo $today_count == 1 ? '' : 's'; ?> today</p>
             </div>
             <div class="page-actions">
