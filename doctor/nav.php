@@ -1,15 +1,21 @@
 <?php
 
+
 $current_page = basename($_SERVER['PHP_SELF']);
 
+
 function nav_active($page, $current) {
-    return $page === $current ? 'active' : '';
+    if ($page === $current) {
+        return 'active';
+    }
+    return '';
 }
 ?>
 <div class="app-shell">
     <aside class="sidebar">
         <div class="brand">🩺 MediCore</div>
 
+        <!-- navigation links -->
         <div class="section-label">Clinical</div>
         <a class="nav-link <?php echo nav_active('dashboard.php', $current_page); ?>" href="dashboard.php">Dashboard</a>
         <a class="nav-link <?php echo nav_active('appointments.php', $current_page); ?>" href="appointments.php">Appointments</a>
@@ -18,6 +24,7 @@ function nav_active($page, $current) {
         <div class="section-label">Account</div>
         <a class="nav-link" href="../logout.php" style="display:none;"></a>
 
+      
         <div class="account-card">
             <div class="avatar"><?php echo strtoupper(substr($_SESSION['full_name'], 0, 1)); ?></div>
             <div>

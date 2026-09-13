@@ -3,16 +3,16 @@ $required_role = 'Doctor';
 require_once '../includes/auth_check.php';
 require_once '../config/db.php';
 
+
 $stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $doctor_id = $stmt->get_result()->fetch_assoc()['doctor_id'];
 
 
-$all_stmt = $conn->prepare("
+$stmt = $conn->prepare("
     SELECT ltr.lab_request_id, ltr.test_type, ltr.requested_at,
-           u.full_name AS patient_name, res.result_data, res.result_date,
-           CASE WHEN res.lab_result_id IS NULL THEN 'Pending' ELSE 'Done' END AS req_status
+           u.full_name AS patient_name, res.result_data, res.result_date
     FROM lab_test_request ltr
     JOIN appointment a ON ltr.appointment_id = a.appointment_id
     JOIN patient p ON ltr.patient_id = p.patient_id
@@ -21,12 +21,37 @@ $all_stmt = $conn->prepare("
     WHERE a.doctor_id = ?
     ORDER BY ltr.requested_at DESC
 ");
-$all_stmt->bind_param("i", $doctor_id);
-$all_stmt->execute();
-$all_rows = $all_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->bind_param("i", $doctor_id);
+$stmt->execute();
+$result = $stmt->get_result();
 
-$pending_count = count(array_filter($all_rows, fn($r) => $r['req_status'] === 'Pending'));
-$done_count    = count(array_filter($all_rows, fn($r) => $r['req_status'] === 'Done'));
+
+$all_rows = [];
+$pending_count = 0;
+$done_count = 0;
+
+while ($row = $result->fetch_assoc()) {
+   
+    if ($row['result_data'] === null) {
+        $row['req_status'] = 'Pending';
+        $pending_count++;
+    } else {
+        $row['req_status'] = 'Done';
+        $done_count++;
+    }
+
+    $all_rows[] = $row;
+}
+
+$total_count = count($all_rows);
+
+
+function status_class($status) {
+    if ($status === 'Done') {
+        return 'badge-done';
+    }
+    return 'badge-pending';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,13 +70,14 @@ $done_count    = count(array_filter($all_rows, fn($r) => $r['req_status'] === 'D
             </div>
         </div>
 
+        
         <div class="tab-bar" id="tabBar">
-            <button class="tab-btn active" data-filter="All">All <span class="count"><?php echo count($all_rows); ?></span></button>
+            <button class="tab-btn active" data-filter="All">All <span class="count"><?php echo $total_count; ?></span></button>
             <button class="tab-btn" data-filter="Pending">Pending <span class="count"><?php echo $pending_count; ?></span></button>
             <button class="tab-btn" data-filter="Done">Done <span class="count"><?php echo $done_count; ?></span></button>
         </div>
 
-        <?php if (count($all_rows) === 0): ?>
+        <?php if ($total_count === 0): ?>
             <p class="empty-msg">No lab requests yet.</p>
         <?php else: ?>
         <table id="labTable">
@@ -66,14 +92,24 @@ $done_count    = count(array_filter($all_rows, fn($r) => $r['req_status'] === 'D
             <tr data-status="<?php echo $row['req_status']; ?>">
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($row['patient_name'],0,2)); ?></div>
+                        <div class="avatar-round"><?php echo strtoupper(substr($row['patient_name'], 0, 2)); ?></div>
                         <?php echo htmlspecialchars($row['patient_name']); ?>
                     </div>
                 </td>
                 <td><?php echo htmlspecialchars($row['test_type']); ?></td>
-                <td><span class="badge <?php echo $row['req_status'] === 'Done' ? 'badge-done' : 'badge-pending'; ?>"><?php echo $row['req_status']; ?></span></td>
+                <td>
+                    <span class="badge <?php echo status_class($row['req_status']); ?>">
+                        <?php echo $row['req_status']; ?>
+                    </span>
+                </td>
                 <td><?php echo date('M j, Y', strtotime($row['requested_at'])); ?></td>
-                <td><?php echo $row['result_data'] ? nl2br(htmlspecialchars($row['result_data'])) : '<span class="empty-msg">Awaiting result</span>'; ?></td>
+                <td>
+                    <?php if ($row['result_data']): ?>
+                        <?php echo nl2br(htmlspecialchars($row['result_data'])); ?>
+                    <?php else: ?>
+                        <span class="empty-msg">Awaiting result</span>
+                    <?php endif; ?>
+                </td>
             </tr>
             <?php endforeach; ?>
         </table>
@@ -83,13 +119,24 @@ $done_count    = count(array_filter($all_rows, fn($r) => $r['req_status'] === 'D
     </div><!-- /.app-shell -->
 
     <script>
+      
         document.querySelectorAll('.tab-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+               
+                document.querySelectorAll('.tab-btn').forEach(function (b) {
+                    b.classList.remove('active');
+                });
                 btn.classList.add('active');
+
                 var filter = btn.dataset.filter;
+
+               
                 document.querySelectorAll('#labTable tr[data-status]').forEach(function (row) {
-                    row.style.display = (filter === 'All' || row.dataset.status === filter) ? '' : 'none';
+                    if (filter === 'All' || row.dataset.status === filter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
                 });
             });
         });
