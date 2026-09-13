@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$doctor_id = $stmt->get_result()->fetch_assoc()['doctor_id'];
+$doctorRow = $stmt->get_result()->fetch_object();
+
+if (!$doctorRow) {
+    die("Doctor profile not found.");
+}
+$doctor_id = $doctorRow->doctor_id;
 
 // Get all appointments for this doctor
 $sql = "SELECT a.appointment_id, a.appointment_date, a.status, a.patient_id, u.full_name AS patient_name
@@ -22,7 +27,6 @@ $stmt->bind_param("i", $doctor_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
-
 $rows = [];
 $counts = [
     'All' => 0,
@@ -32,10 +36,10 @@ $counts = [
     'Cancelled' => 0,
 ];
 
-while ($row = $result->fetch_assoc()) {
+while ($row = $result->fetch_object()) {
     $rows[] = $row;
     $counts['All']++;
-    $counts[$row['status']]++;
+    $counts[$row->status]++;
 }
 
 
@@ -103,32 +107,32 @@ function status_badge($status) {
                 <th>Action</th>
             </tr>
             <?php foreach ($rows as $row):
-                $id = $row['appointment_id'];
+                $id = $row->appointment_id;
             ?>
-            <tr id="appt-row-<?php echo $id; ?>" data-status="<?php echo $row['status']; ?>">
+            <tr id="appt-row-<?php echo $id; ?>" data-status="<?php echo $row->status; ?>">
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($row['patient_name'], 0, 2)); ?></div>
-                        <?php echo htmlspecialchars($row['patient_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($row->patient_name, 0, 2)); ?></div>
+                        <?php echo htmlspecialchars($row->patient_name); ?>
                     </div>
                 </td>
-                <td><?php echo date('M d, Y - h:i A', strtotime($row['appointment_date'])); ?></td>
-                <td id="status-cell-<?php echo $id; ?>"><?php echo status_badge($row['status']); ?></td>
+                <td><?php echo date('M d, Y - h:i A', strtotime($row->appointment_date)); ?></td>
+                <td id="status-cell-<?php echo $id; ?>"><?php echo status_badge($row->status); ?></td>
                 <td>
                     <div id="actions-<?php echo $id; ?>" style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <?php if ($row['status'] === 'Pending'): ?>
+                        <?php if ($row->status === 'Pending'): ?>
                             <button class="btn btn-sm btn-approve" onclick="updateStatus(<?php echo $id; ?>, 'Confirmed')">Approve</button>
                             <button class="btn btn-sm btn-reject" onclick="updateStatus(<?php echo $id; ?>, 'Cancelled')">Reject</button>
-                        <?php elseif ($row['status'] === 'Confirmed'): ?>
+                        <?php elseif ($row->status === 'Confirmed'): ?>
                             <button class="btn btn-sm btn-done" onclick="updateStatus(<?php echo $id; ?>, 'Completed')">Mark as Done</button>
                         <?php else: ?>
                             <span style="color:var(--text-muted); font-size:12px;">&mdash;</span>
                         <?php endif; ?>
                     </div>
                     <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-                        <a class="btn btn-sm btn-outline" href="#" onclick="openHistory(<?php echo $row['patient_id']; ?>); return false;">History</a>
-                        <a class="btn btn-sm btn-outline" href="create-prescription.php?appointment_id=<?php echo $id; ?>&patient_id=<?php echo $row['patient_id']; ?>">Prescribe</a>
-                        <a class="btn btn-sm btn-outline" href="request-lab-test.php?appointment_id=<?php echo $id; ?>&patient_id=<?php echo $row['patient_id']; ?>">Lab Test</a>
+                        <a class="btn btn-sm btn-outline" href="#" onclick="openHistory(<?php echo $row->patient_id; ?>); return false;">History</a>
+                        <a class="btn btn-sm btn-outline" href="create-prescription.php?appointment_id=<?php echo $id; ?>&patient_id=<?php echo $row->patient_id; ?>">Prescribe</a>
+                        <a class="btn btn-sm btn-outline" href="request-lab-test.php?appointment_id=<?php echo $id; ?>&patient_id=<?php echo $row->patient_id; ?>">Lab Test</a>
                     </div>
                 </td>
             </tr>
@@ -168,7 +172,6 @@ function status_badge($status) {
             'Cancelled': 'badge-cancelled'
         };
 
-       
         function renderActions(appointmentId, status) {
             var actionsEl = document.getElementById('actions-' + appointmentId);
 
@@ -184,7 +187,6 @@ function status_badge($status) {
             }
         }
 
-        
         function updateStatus(appointmentId, newStatus) {
             var params = "appointment_id=" + encodeURIComponent(appointmentId) +
                          "&status=" + encodeURIComponent(newStatus);
@@ -215,7 +217,6 @@ function status_badge($status) {
             xhr.send(params);
         }
 
-        //  load patient history into the modal
         function openHistory(patientId) {
             var modal = document.getElementById('historyModal');
             var content = document.getElementById('historyContent');

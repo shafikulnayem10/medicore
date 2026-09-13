@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$doctor_id = $stmt->get_result()->fetch_assoc()['doctor_id'];
+$doctorRow = $stmt->get_result()->fetch_object();
+
+if (!$doctorRow) {
+    die("Doctor profile not found.");
+}
+$doctor_id = $doctorRow->doctor_id;
 
 
 $appointment_id = isset($_GET['appointment_id']) ? (int)$_GET['appointment_id'] : 0;
@@ -23,7 +28,8 @@ if ($appointment_id === 0 || $patient_id === 0) {
 $p_stmt = $conn->prepare("SELECT u.full_name FROM patient p JOIN user u ON p.user_id = u.user_id WHERE p.patient_id = ?");
 $p_stmt->bind_param("i", $patient_id);
 $p_stmt->execute();
-$patient_name = $p_stmt->get_result()->fetch_assoc()['full_name'] ?? 'Unknown';
+$patientRow = $p_stmt->get_result()->fetch_object();
+$patient_name = $patientRow->full_name ?? 'Unknown';
 ?>
 <!DOCTYPE html>
 <html lang="en">

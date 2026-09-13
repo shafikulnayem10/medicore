@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
+$patientRow = $stmt->get_result()->fetch_object();
+
+if (!$patientRow) {
+    die("Patient profile not found.");
+}
+$patient_id = $patientRow->patient_id;
 
 
 $stmt = $conn->prepare("
@@ -18,7 +23,12 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$bills = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+
+$bills = [];
+while ($row = $result->fetch_object()) {
+    $bills[] = $row;
+}
 
 
 $total_count = count($bills);
@@ -27,11 +37,11 @@ $unpaid_count = 0;
 $outstanding = 0;
 
 foreach ($bills as $bill) {
-    if ($bill['payment_status'] === 'Paid') {
+    if ($bill->payment_status === 'Paid') {
         $paid_count++;
     } else {
         $unpaid_count++;
-        $outstanding += $bill['amount'];
+        $outstanding += $bill->amount;
     }
 }
 
@@ -95,13 +105,13 @@ function payment_badge_class($status) {
             <?php foreach ($bills as $bill): ?>
             <tr>
                
-                <td>INV-<?php echo str_pad($bill['billing_id'], 4, '0', STR_PAD_LEFT); ?></td>
-                <td><?php echo htmlspecialchars($bill['services'] ?: '—'); ?></td>
-                <td><?php echo date('M d, Y', strtotime($bill['generated_at'])); ?></td>
-                <td>Tk <?php echo number_format($bill['amount'], 2); ?></td>
+                <td>INV-<?php echo str_pad($bill->billing_id, 4, '0', STR_PAD_LEFT); ?></td>
+                <td><?php echo htmlspecialchars($bill->services ?: '—'); ?></td>
+                <td><?php echo date('M d, Y', strtotime($bill->generated_at)); ?></td>
+                <td>Tk <?php echo number_format($bill->amount, 2); ?></td>
                 <td>
-                    <span class="badge <?php echo payment_badge_class($bill['payment_status']); ?>">
-                        <?php echo htmlspecialchars($bill['payment_status']); ?>
+                    <span class="badge <?php echo payment_badge_class($bill->payment_status); ?>">
+                        <?php echo htmlspecialchars($bill->payment_status); ?>
                     </span>
                 </td>
             </tr>

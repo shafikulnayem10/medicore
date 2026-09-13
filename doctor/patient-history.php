@@ -14,7 +14,7 @@ if ($patient_id === 0) {
 $stmt = $conn->prepare("SELECT u.full_name, p.dob FROM patient p JOIN user u ON p.user_id = u.user_id WHERE p.patient_id = ?");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$patient = $stmt->get_result()->fetch_assoc();
+$patient = $stmt->get_result()->fetch_object();
 
 if (!$patient) {
     die("Patient not found.");
@@ -31,7 +31,12 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$prescriptions_rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+
+$prescriptions_rows = [];
+while ($row = $result->fetch_object()) {
+    $prescriptions_rows[] = $row;
+}
 
 
 $stmt = $conn->prepare("
@@ -43,23 +48,28 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$lab_rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+
+$lab_rows = [];
+while ($row = $result->fetch_object()) {
+    $lab_rows[] = $row;
+}
 
 
 $timeline = [];
 
 foreach ($prescriptions_rows as $row) {
     $timeline[] = [
-        'date'  => $row['created_at'],
-        'title' => 'Prescription: ' . $row['medication'],
-        'by'    => $row['doctor_name'],
+        'date'  => $row->created_at,
+        'title' => 'Prescription: ' . $row->medication,
+        'by'    => $row->doctor_name,
     ];
 }
 
 foreach ($lab_rows as $row) {
     $timeline[] = [
-        'date'  => $row['result_date'],
-        'title' => 'Lab Result: ' . $row['test_type'],
+        'date'  => $row->result_date,
+        'title' => 'Lab Result: ' . $row->test_type,
         'by'    => null,
     ];
 }
@@ -89,11 +99,11 @@ usort($timeline, 'sort_by_date_desc');
         <div class="panel" style="margin-bottom:16px;">
             <div class="avatar-cell">
                 <div class="avatar-round" style="width:44px; height:44px; font-size:16px;">
-                    <?php echo strtoupper(substr($patient['full_name'], 0, 2)); ?>
+                    <?php echo strtoupper(substr($patient->full_name, 0, 2)); ?>
                 </div>
                 <div>
-                    <div style="font-weight:700; font-size:16px;"><?php echo htmlspecialchars($patient['full_name']); ?></div>
-                    <div style="font-size:12px; color:var(--text-muted);">DOB: <?php echo htmlspecialchars($patient['dob']); ?></div>
+                    <div style="font-weight:700; font-size:16px;"><?php echo htmlspecialchars($patient->full_name); ?></div>
+                    <div style="font-size:12px; color:var(--text-muted);">DOB: <?php echo htmlspecialchars($patient->dob); ?></div>
                 </div>
             </div>
         </div>
@@ -134,10 +144,10 @@ usort($timeline, 'sort_by_date_desc');
                     <tr><th>Date</th><th>Doctor</th><th>Medication</th><th>Instructions</th></tr>
                     <?php foreach ($prescriptions_rows as $row): ?>
                     <tr>
-                        <td><?php echo date('d M Y', strtotime($row['created_at'])); ?></td>
-                        <td>Dr. <?php echo htmlspecialchars($row['doctor_name']); ?></td>
-                        <td><?php echo nl2br(htmlspecialchars($row['medication'])); ?></td>
-                        <td><?php echo nl2br(htmlspecialchars($row['instructions'])); ?></td>
+                        <td><?php echo date('d M Y', strtotime($row->created_at)); ?></td>
+                        <td>Dr. <?php echo htmlspecialchars($row->doctor_name); ?></td>
+                        <td><?php echo nl2br(htmlspecialchars($row->medication)); ?></td>
+                        <td><?php echo nl2br(htmlspecialchars($row->instructions)); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </table>
@@ -153,9 +163,9 @@ usort($timeline, 'sort_by_date_desc');
                     <tr><th>Test Type</th><th>Result</th><th>Date</th></tr>
                     <?php foreach ($lab_rows as $row): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($row['test_type']); ?></td>
-                        <td><?php echo nl2br(htmlspecialchars($row['result_data'])); ?></td>
-                        <td><?php echo date('d M Y', strtotime($row['result_date'])); ?></td>
+                        <td><?php echo htmlspecialchars($row->test_type); ?></td>
+                        <td><?php echo nl2br(htmlspecialchars($row->result_data)); ?></td>
+                        <td><?php echo date('d M Y', strtotime($row->result_date)); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </table>

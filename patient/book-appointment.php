@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
+$patientRow = $stmt->get_result()->fetch_object();
+
+if (!$patientRow) {
+    die("Patient profile not found.");
+}
+$patient_id = $patientRow->patient_id;
 
 
 $doctors_result = $conn->query("
@@ -16,7 +21,11 @@ $doctors_result = $conn->query("
     JOIN user u ON d.user_id = u.user_id
     ORDER BY u.full_name
 ");
-$doctors = $doctors_result->fetch_all(MYSQLI_ASSOC);
+
+$doctors = [];
+while ($row = $doctors_result->fetch_object()) {
+    $doctors[] = $row;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -77,16 +86,16 @@ $doctors = $doctors_result->fetch_all(MYSQLI_ASSOC);
             <tr>
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($doc['full_name'], 0, 2)); ?></div>
-                        <?php echo htmlspecialchars($doc['full_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($doc->full_name, 0, 2)); ?></div>
+                        <?php echo htmlspecialchars($doc->full_name); ?>
                     </div>
                 </td>
-                <td><?php echo htmlspecialchars($doc['specialization'] ?: '—'); ?></td>
-                <td><?php echo htmlspecialchars($doc['qualification'] ?: '—'); ?></td>
-                <td><?php echo $doc['experience'] !== null ? $doc['experience'] . ' yrs' : '—'; ?></td>
+                <td><?php echo htmlspecialchars($doc->specialization ?: '—'); ?></td>
+                <td><?php echo htmlspecialchars($doc->qualification ?: '—'); ?></td>
+                <td><?php echo $doc->experience !== null ? $doc->experience . ' yrs' : '—'; ?></td>
                 <td>
                     <button class="btn btn-sm"
-                        onclick="openBooking(<?php echo $doc['doctor_id']; ?>, '<?php echo htmlspecialchars(addslashes($doc['full_name'])); ?>', '<?php echo htmlspecialchars(addslashes($doc['specialization'])); ?>')">
+                        onclick="openBooking(<?php echo $doc->doctor_id; ?>, '<?php echo htmlspecialchars(addslashes($doc->full_name)); ?>', '<?php echo htmlspecialchars(addslashes($doc->specialization)); ?>')">
                         Book Now
                     </button>
                 </td>

@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
+$patientRow = $stmt->get_result()->fetch_object();
+
+if (!$patientRow) {
+    die("Patient profile not found.");
+}
+$patient_id = $patientRow->patient_id;
 
 
 $stmt = $conn->prepare("
@@ -21,7 +26,12 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$prescriptions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$result = $stmt->get_result();
+
+$prescriptions = [];
+while ($row = $result->fetch_object()) {
+    $prescriptions[] = $row;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -56,14 +66,14 @@ $prescriptions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <tr>
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
-                        Dr. <?php echo htmlspecialchars($row['doctor_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($row->doctor_name, 0, 2)); ?></div>
+                        Dr. <?php echo htmlspecialchars($row->doctor_name); ?>
                     </div>
                 </td>
-                <td><?php echo htmlspecialchars($row['specialization'] ?: '—'); ?></td>
-                <td><?php echo date('M d, Y', strtotime($row['created_at'])); ?></td>
-                <td><?php echo nl2br(htmlspecialchars($row['medication'] ?: '—')); ?></td>
-                <td><?php echo nl2br(htmlspecialchars($row['instructions'] ?: '—')); ?></td>
+                <td><?php echo htmlspecialchars($row->specialization ?: '—'); ?></td>
+                <td><?php echo date('M d, Y', strtotime($row->created_at)); ?></td>
+                <td><?php echo nl2br(htmlspecialchars($row->medication ?: '—')); ?></td>
+                <td><?php echo nl2br(htmlspecialchars($row->instructions ?: '—')); ?></td>
             </tr>
             <?php endforeach; ?>
         </table>

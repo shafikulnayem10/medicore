@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$patient_id = $stmt->get_result()->fetch_assoc()['patient_id'];
+$patientRow = $stmt->get_result()->fetch_object();
+
+if (!$patientRow) {
+    die("Patient profile not found.");
+}
+$patient_id = $patientRow->patient_id;
 
 
 $stmt = $conn->prepare("
@@ -16,13 +21,13 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$upcoming_count = $stmt->get_result()->fetch_assoc()['c'];
+$upcoming_count = $stmt->get_result()->fetch_object()->c;
 
 
 $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM prescription WHERE patient_id = ?");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$rx_count = $stmt->get_result()->fetch_assoc()['c'];
+$rx_count = $stmt->get_result()->fetch_object()->c;
 
 
 $stmt = $conn->prepare("
@@ -32,15 +37,15 @@ $stmt = $conn->prepare("
 ");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$unpaid_row = $stmt->get_result()->fetch_assoc();
-$unpaid_count = $unpaid_row['c'];
-$unpaid_total = $unpaid_row['total'];
+$unpaid_row = $stmt->get_result()->fetch_object();
+$unpaid_count = $unpaid_row->c;
+$unpaid_total = $unpaid_row->total;
 
 
 $stmt = $conn->prepare("SELECT COUNT(*) AS c FROM appointment WHERE patient_id = ?");
 $stmt->bind_param("i", $patient_id);
 $stmt->execute();
-$total_count = $stmt->get_result()->fetch_assoc()['c'];
+$total_count = $stmt->get_result()->fetch_object()->c;
 
 
 $stmt = $conn->prepare("
@@ -139,16 +144,16 @@ function status_badge($status) {
                 <?php else: ?>
                 <table>
                     <tr><th>Doctor</th><th>Date &amp; Time</th><th>Status</th></tr>
-                    <?php while ($row = $upcoming_appointments->fetch_assoc()): ?>
+                    <?php while ($row = $upcoming_appointments->fetch_object()): ?>
                     <tr>
                         <td>
                             <div class="avatar-cell">
-                                <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
-                                Dr. <?php echo htmlspecialchars($row['doctor_name']); ?>
+                                <div class="avatar-round"><?php echo strtoupper(substr($row->doctor_name, 0, 2)); ?></div>
+                                Dr. <?php echo htmlspecialchars($row->doctor_name); ?>
                             </div>
                         </td>
-                        <td><?php echo date('M d, Y - h:i A', strtotime($row['appointment_date'])); ?></td>
-                        <td><?php echo status_badge($row['status']); ?></td>
+                        <td><?php echo date('M d, Y - h:i A', strtotime($row->appointment_date)); ?></td>
+                        <td><?php echo status_badge($row->status); ?></td>
                     </tr>
                     <?php endwhile; ?>
                 </table>
@@ -165,13 +170,13 @@ function status_badge($status) {
                 <?php if ($recent_prescriptions->num_rows === 0): ?>
                     <p class="empty-msg">No prescriptions yet.</p>
                 <?php else: ?>
-                    <?php while ($row = $recent_prescriptions->fetch_assoc()): ?>
+                    <?php while ($row = $recent_prescriptions->fetch_object()): ?>
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--mint-card-border);">
                         <div class="avatar-cell">
-                            <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'], 0, 2)); ?></div>
+                            <div class="avatar-round"><?php echo strtoupper(substr($row->doctor_name, 0, 2)); ?></div>
                             <div>
-                                <div style="font-size:13px; font-weight:600;">Dr. <?php echo htmlspecialchars($row['doctor_name']); ?></div>
-                                <div style="font-size:11px; color:var(--text-muted);"><?php echo date('M j, Y', strtotime($row['created_at'])); ?></div>
+                                <div style="font-size:13px; font-weight:600;">Dr. <?php echo htmlspecialchars($row->doctor_name); ?></div>
+                                <div style="font-size:11px; color:var(--text-muted);"><?php echo date('M j, Y', strtotime($row->created_at)); ?></div>
                             </div>
                         </div>
                     </div>

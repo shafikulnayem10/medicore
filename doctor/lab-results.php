@@ -7,7 +7,12 @@ require_once '../config/db.php';
 $stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$doctor_id = $stmt->get_result()->fetch_assoc()['doctor_id'];
+$doctorRow = $stmt->get_result()->fetch_object();
+
+if (!$doctorRow) {
+    die("Doctor profile not found.");
+}
+$doctor_id = $doctorRow->doctor_id;
 
 
 $stmt = $conn->prepare("
@@ -30,13 +35,13 @@ $all_rows = [];
 $pending_count = 0;
 $done_count = 0;
 
-while ($row = $result->fetch_assoc()) {
-   
-    if ($row['result_data'] === null) {
-        $row['req_status'] = 'Pending';
+while ($row = $result->fetch_object()) {
+
+    if ($row->result_data === null) {
+        $row->req_status = 'Pending';
         $pending_count++;
     } else {
-        $row['req_status'] = 'Done';
+        $row->req_status = 'Done';
         $done_count++;
     }
 
@@ -89,23 +94,23 @@ function status_class($status) {
                 <th>Result</th>
             </tr>
             <?php foreach ($all_rows as $row): ?>
-            <tr data-status="<?php echo $row['req_status']; ?>">
+            <tr data-status="<?php echo $row->req_status; ?>">
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($row['patient_name'], 0, 2)); ?></div>
-                        <?php echo htmlspecialchars($row['patient_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($row->patient_name, 0, 2)); ?></div>
+                        <?php echo htmlspecialchars($row->patient_name); ?>
                     </div>
                 </td>
-                <td><?php echo htmlspecialchars($row['test_type']); ?></td>
+                <td><?php echo htmlspecialchars($row->test_type); ?></td>
                 <td>
-                    <span class="badge <?php echo status_class($row['req_status']); ?>">
-                        <?php echo $row['req_status']; ?>
+                    <span class="badge <?php echo status_class($row->req_status); ?>">
+                        <?php echo $row->req_status; ?>
                     </span>
                 </td>
-                <td><?php echo date('M j, Y', strtotime($row['requested_at'])); ?></td>
+                <td><?php echo date('M j, Y', strtotime($row->requested_at)); ?></td>
                 <td>
-                    <?php if ($row['result_data']): ?>
-                        <?php echo nl2br(htmlspecialchars($row['result_data'])); ?>
+                    <?php if ($row->result_data): ?>
+                        <?php echo nl2br(htmlspecialchars($row->result_data)); ?>
                     <?php else: ?>
                         <span class="empty-msg">Awaiting result</span>
                     <?php endif; ?>
