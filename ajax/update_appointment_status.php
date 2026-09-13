@@ -6,8 +6,8 @@ require_once '../config/db.php';
 header('Content-Type: application/json');
 
 $appointment_id = isset($_POST['appointment_id']) ? (int)$_POST['appointment_id'] : 0;
-$status         = $_POST['status'] ?? '';
-$allowed        = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
+$status= $_POST['status'] ?? '';
+$allowed = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
 
 if ($appointment_id === 0 || !in_array($status, $allowed, true)) {
     echo json_encode(['success' => false, 'error' => 'Invalid input.']);

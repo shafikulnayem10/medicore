@@ -11,9 +11,9 @@ $stmt->execute();
 $doctor_id = $stmt->get_result()->fetch_object()->doctor_id;
 
 $appointment_id = isset($_POST['appointment_id']) ? (int)$_POST['appointment_id'] : 0;
-$patient_id     = isset($_POST['patient_id']) ? (int)$_POST['patient_id'] : 0;
-$medication     = trim($_POST['medication'] ?? '');
-$instructions   = trim($_POST['instructions'] ?? '');
+$patient_id= isset($_POST['patient_id']) ? (int)$_POST['patient_id'] : 0;
+$medication= trim($_POST['medication'] ?? '');
+$instructions= trim($_POST['instructions'] ?? '');
 
 if ($appointment_id === 0 || $patient_id === 0 || $medication === '') {
     echo json_encode(['success' => false, 'error' => 'Medication field is required.']);

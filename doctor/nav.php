@@ -13,7 +13,7 @@ function nav_active($page, $current) {
 ?>
 <div class="app-shell">
     <aside class="sidebar">
-        <div class="brand">🩺 MediCore</div>
+        <div class="brand">MediCore</div>
 
         <!-- navigation links -->
         <div class="section-label">Clinical</div>

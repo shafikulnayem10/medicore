@@ -102,7 +102,7 @@ $patient_name = $patientRow->full_name ?? 'Unknown';
                         var data = JSON.parse(xhr.responseText); 
 
                         if (data.success) {
-                            /
+                            
                             msgBox.innerHTML = '<p class="success-msg">' + data.message + '</p>';
                             form.reset();
                         } else {
