@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($error === '') {
-        // Check email
+      
         $check = $conn->prepare("SELECT user_id FROM user WHERE email = ?");
         $check->bind_param("s", $email);
         $check->execute();
@@ -27,14 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $conn->begin_transaction();
             try {
-                $hashed = password_hash($password, PASSWORD_DEFAULT);
-
                 $stmt = $conn->prepare("INSERT INTO user (full_name, email, phone, password, user_type) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssss", $full_name, $email, $phone, $hashed, $user_type);
+                $stmt->bind_param("sssss", $full_name, $email, $phone, $password, $user_type);
                 $stmt->execute();
                 $user_id = $stmt->insert_id;
 
-                // Insert into the role-specific table
+               
                 switch ($user_type) {
                     case 'Doctor':
                         $specialization = trim($_POST['specialization'] ?? '');
@@ -85,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MediCore - Register</title>
-    <!-- <link rel="stylesheet" href="assets/css/auth.css"> -->
+    
      <link rel="stylesheet" href="assets/css/auth.css?v=2">
 </head>
 <body>
@@ -134,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
             </div>
 
-            <!-- Doctor-only fields -->
+          
             <div id="doctor-fields" class="role-fields" style="display:none;">
                 <div>
                     <label>Specialization</label>
@@ -150,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <!-- Receptionist-only fields -->
+          
             <div id="receptionist-fields" class="role-fields" style="display:none;">
                 <div>
                     <label>Employee Code</label>
@@ -167,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <!-- Patient-only fields -->
+           
             <div id="patient-fields" class="role-fields" style="display:none;">
                 <div>
                     <label>Date of Birth</label>
