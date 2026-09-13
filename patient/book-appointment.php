@@ -15,14 +15,6 @@ $doctors_stmt = $conn->query("
     ORDER BY u.full_name
 ");
 $doctors = $doctors_stmt->fetch_all(MYSQLI_ASSOC);
-
-$specializations = [];
-foreach ($doctors as $d) {
-    if ($d['specialization'] && !in_array($d['specialization'], $specializations)) {
-        $specializations[] = $d['specialization'];
-    }
-}
-sort($specializations);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,15 +39,6 @@ sort($specializations);
             overflow-y: auto;
         }
         .modal-close { float: right; cursor: pointer; font-size: 18px; color: #888; }
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-        .filter-bar input[type="text"], .filter-bar select {
-            padding: 9px 12px;
-            border: 1px solid var(--mint-card-border);
-            border-radius: 8px;
-            font-size: 13px;
-            background: #fff;
-        }
-        .filter-bar input[type="text"] { flex: 1; min-width: 200px; }
         .doctor-info-box {
             background: var(--mint-bg);
             border: 1px solid var(--mint-card-border);
@@ -76,16 +59,6 @@ sort($specializations);
             </div>
         </div>
 
-        <div class="filter-bar">
-            <input type="text" id="doctorSearch" placeholder="Search doctor by name...">
-            <select id="specFilter">
-                <option value="">All Specializations</option>
-                <?php foreach ($specializations as $s): ?>
-                    <option value="<?php echo htmlspecialchars($s); ?>"><?php echo htmlspecialchars($s); ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-
         <?php if (count($doctors) === 0): ?>
             <p class="empty-msg">No doctors available right now.</p>
         <?php else: ?>
@@ -98,11 +71,11 @@ sort($specializations);
                 <th></th>
             </tr>
             <?php foreach ($doctors as $d): ?>
-            <tr data-name="<?php echo htmlspecialchars(strtolower($d['full_name'])); ?>" data-spec="<?php echo htmlspecialchars($d['specialization']); ?>">
+            <tr>
                 <td>
                     <div class="avatar-cell">
-                        <div class="avatar-round"><?php echo strtoupper(substr($d['full_name'],0,2)); ?></div>
-                        Dr. <?php echo htmlspecialchars($d['full_name']); ?>
+                        <div class="avatar-round"><?php echo strtoupper(substr($d['full_name'], 0, 2)); ?></div>
+                        <?php echo htmlspecialchars($d['full_name']); ?>
                     </div>
                 </td>
                 <td><?php echo htmlspecialchars($d['specialization'] ?: '—'); ?></td>
@@ -167,20 +140,6 @@ sort($specializations);
     </div>
 
     <script>
-       
-        document.getElementById('doctorSearch').addEventListener('input', filterDoctors);
-        document.getElementById('specFilter').addEventListener('change', filterDoctors);
-
-        function filterDoctors() {
-            var q = document.getElementById('doctorSearch').value.toLowerCase();
-            var spec = document.getElementById('specFilter').value;
-            document.querySelectorAll('#doctorTable tr[data-name]').forEach(function (row) {
-                var nameMatch = row.dataset.name.indexOf(q) !== -1;
-                var specMatch = (spec === '' || row.dataset.spec === spec);
-                row.style.display = (nameMatch && specMatch) ? '' : 'none';
-            });
-        }
-
         var selectedDoctorId = null;
 
         function openBooking(doctorId, doctorName, specialization) {
@@ -201,48 +160,48 @@ sort($specializations);
         }
 
         document.getElementById('bookingForm').addEventListener('submit', function (e) {
-    e.preventDefault();
+            e.preventDefault();
 
-    var date = document.getElementById('apptDate').value;
-    var time = document.getElementById('apptTime').value;
-    var reason = document.getElementById('apptReason').value.trim();
+            var date = document.getElementById('apptDate').value;
+            var time = document.getElementById('apptTime').value;
+            var reason = document.getElementById('apptReason').value.trim();
 
-    if (!date || !time || !reason) {
-        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">All fields are required.</p>';
-        return;
-    }
-
-    var params = "doctor_id=" + encodeURIComponent(selectedDoctorId) +
-                 "&appt_date=" + encodeURIComponent(date) +
-                 "&appt_time=" + encodeURIComponent(time) +
-                 "&reason=" + encodeURIComponent(reason);
-
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "../ajax/book_appointment.php", true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    if (data.success) {
-                        document.getElementById('bookingMsg').innerHTML = '<p style="color:green;">Appointment requested successfully!</p>';
-                        setTimeout(function () { window.location.href = 'appointments.php'; }, 900);
-                    } else {
-                        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">' + (data.error || 'Booking failed.') + '</p>';
-                    }
-                } catch (err) {
-                    console.error("Server Response:", xhr.responseText);
-                    document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Server error occurred. Check console.</p>';
-                }
-            } else {
-                document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Network error. Please try again.</p>';
+            if (!date || !time || !reason) {
+                document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">All fields are required.</p>';
+                return;
             }
-        }
-    };
-    xhr.send(params);
-});
+
+            var params = "doctor_id=" + encodeURIComponent(selectedDoctorId) +
+                         "&appt_date=" + encodeURIComponent(date) +
+                         "&appt_time=" + encodeURIComponent(time) +
+                         "&reason=" + encodeURIComponent(reason);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "../ajax/book_appointment.php", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            if (data.success) {
+                                document.getElementById('bookingMsg').innerHTML = '<p style="color:green;">Appointment requested successfully!</p>';
+                                setTimeout(function () { window.location.href = 'appointments.php'; }, 900);
+                            } else {
+                                document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">' + (data.error || 'Booking failed.') + '</p>';
+                            }
+                        } catch (err) {
+                            console.error("Server Response:", xhr.responseText);
+                            document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Server error occurred. Check console.</p>';
+                        }
+                    } else {
+                        document.getElementById('bookingMsg').innerHTML = '<p style="color:red;">Network error. Please try again.</p>';
+                    }
+                }
+            };
+            xhr.send(params);
+        });
     </script>
 </body>
 </html>

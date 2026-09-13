@@ -31,7 +31,7 @@ function nav_active($page, $current) {
 
     <div class="main">
         <header class="topbar">
-            <input type="text" class="search" placeholder="Search doctors, appointments...">
+            
             <div class="spacer"></div>
             <div class="doctor-chip">
                 <div class="avatar-sm"><?php echo strtoupper(substr($_SESSION['full_name'], 0, 1)); ?></div>

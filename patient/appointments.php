@@ -83,7 +83,7 @@ function status_badge($status) {
                 <td>
                     <div class="avatar-cell">
                         <div class="avatar-round"><?php echo strtoupper(substr($row['doctor_name'],0,2)); ?></div>
-                        Dr. <?php echo htmlspecialchars($row['doctor_name']); ?>
+                         <?php echo htmlspecialchars($row['doctor_name']); ?>
                     </div>
                 </td>
                 <td><?php echo htmlspecialchars($row['specialization'] ?: '—'); ?></td>
