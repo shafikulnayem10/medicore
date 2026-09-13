@@ -14,11 +14,10 @@ if ($appointment_id === 0 || !in_array($status, $allowed, true)) {
     exit();
 }
 
-
 $doc_stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $doc_stmt->bind_param("i", $_SESSION['user_id']);
 $doc_stmt->execute();
-$doctor_id = $doc_stmt->get_result()->fetch_assoc()['doctor_id'];
+$doctor_id = $doc_stmt->get_result()->fetch_object()->doctor_id;
 
 $check_stmt = $conn->prepare("SELECT appointment_id FROM appointment WHERE appointment_id = ? AND doctor_id = ?");
 $check_stmt->bind_param("ii", $appointment_id, $doctor_id);

@@ -15,9 +15,9 @@ if ($appointment_id === 0) {
 $pat_stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $pat_stmt->bind_param("i", $_SESSION['user_id']);
 $pat_stmt->execute();
-$patient_id = $pat_stmt->get_result()->fetch_assoc()['patient_id'];
+$patient_id = $pat_stmt->get_result()->fetch_object()->patient_id;
 
-// only allow cancelling own, still-Pending appointments
+
 $check_stmt = $conn->prepare("SELECT appointment_id FROM appointment WHERE appointment_id = ? AND patient_id = ? AND status = 'Pending'");
 $check_stmt->bind_param("ii", $appointment_id, $patient_id);
 $check_stmt->execute();

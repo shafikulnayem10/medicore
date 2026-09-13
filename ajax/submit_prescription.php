@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 $stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
-$doctor_id = $stmt->get_result()->fetch_assoc()['doctor_id'];
+$doctor_id = $stmt->get_result()->fetch_object()->doctor_id;
 
 $appointment_id = isset($_POST['appointment_id']) ? (int)$_POST['appointment_id'] : 0;
 $patient_id     = isset($_POST['patient_id']) ? (int)$_POST['patient_id'] : 0;

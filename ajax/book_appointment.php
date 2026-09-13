@@ -24,7 +24,6 @@ if ($doc_check->get_result()->num_rows === 0) {
     exit();
 }
 
-
 $timestamp = strtotime("$appt_date $appt_time");
 if (!$timestamp) {
     echo json_encode(['success' => false, 'error' => 'Invalid date or time.']);
@@ -42,13 +41,13 @@ $appointment_datetime = date('Y-m-d H:i:s', $timestamp);
 $pat_stmt = $conn->prepare("SELECT patient_id FROM patient WHERE user_id = ?");
 $pat_stmt->bind_param("i", $_SESSION['user_id']);
 $pat_stmt->execute();
-$patient_row = $pat_stmt->get_result()->fetch_assoc();
+$patient_row = $pat_stmt->get_result()->fetch_object();
 
 if (!$patient_row) {
     echo json_encode(['success' => false, 'error' => 'Patient profile not found.']);
     exit();
 }
-$patient_id = $patient_row['patient_id'];
+$patient_id = $patient_row->patient_id;
 
 // Insert appointment
 $insert_stmt = $conn->prepare("

@@ -8,8 +8,7 @@ $patient_id = isset($_GET['patient_id']) ? (int)$_GET['patient_id'] : 0;
 $doc_stmt = $conn->prepare("SELECT doctor_id FROM doctor WHERE user_id = ?");
 $doc_stmt->bind_param("i", $_SESSION['user_id']);
 $doc_stmt->execute();
-$doctor_id = $doc_stmt->get_result()->fetch_assoc()['doctor_id'];
-
+$doctor_id = $doc_stmt->get_result()->fetch_object()->doctor_id;
 
 $owns_stmt = $conn->prepare("SELECT 1 FROM appointment WHERE patient_id = ? AND doctor_id = ? LIMIT 1");
 $owns_stmt->bind_param("ii", $patient_id, $doctor_id);
@@ -23,7 +22,7 @@ if ($owns_stmt->get_result()->num_rows === 0) {
 $p_stmt = $conn->prepare("SELECT u.full_name, p.dob FROM patient p JOIN user u ON p.user_id = u.user_id WHERE p.patient_id = ?");
 $p_stmt->bind_param("i", $patient_id);
 $p_stmt->execute();
-$patient = $p_stmt->get_result()->fetch_assoc();
+$patient = $p_stmt->get_result()->fetch_object();
 
 $rx_stmt = $conn->prepare("
     SELECT pr.medication, pr.instructions, pr.created_at, u.full_name AS doctor_name
@@ -48,8 +47,8 @@ $lab_stmt->bind_param("i", $patient_id);
 $lab_stmt->execute();
 $lab_results = $lab_stmt->get_result();
 ?>
-<h2><?php echo htmlspecialchars($patient['full_name']); ?></h2>
-<p>Date of Birth: <?php echo htmlspecialchars($patient['dob']); ?></p>
+<h2><?php echo htmlspecialchars($patient->full_name); ?></h2>
+<p>Date of Birth: <?php echo htmlspecialchars($patient->dob); ?></p>
 
 <h3>Prescription History</h3>
 <?php if ($prescriptions->num_rows === 0): ?>
@@ -57,12 +56,12 @@ $lab_results = $lab_stmt->get_result();
 <?php else: ?>
 <table>
     <tr><th>Date</th><th>Doctor</th><th>Medication</th><th>Instructions</th></tr>
-    <?php while ($row = $prescriptions->fetch_assoc()): ?>
+    <?php while ($row = $prescriptions->fetch_object()): ?>
     <tr>
-        <td><?php echo date('d M Y', strtotime($row['created_at'])); ?></td>
-        <td><?php echo htmlspecialchars($row['doctor_name']); ?></td>
-        <td><?php echo nl2br(htmlspecialchars($row['medication'])); ?></td>
-        <td><?php echo nl2br(htmlspecialchars($row['instructions'])); ?></td>
+        <td><?php echo date('d M Y', strtotime($row->created_at)); ?></td>
+        <td><?php echo htmlspecialchars($row->doctor_name); ?></td>
+        <td><?php echo nl2br(htmlspecialchars($row->medication)); ?></td>
+        <td><?php echo nl2br(htmlspecialchars($row->instructions)); ?></td>
     </tr>
     <?php endwhile; ?>
 </table>
@@ -74,11 +73,11 @@ $lab_results = $lab_stmt->get_result();
 <?php else: ?>
 <table>
     <tr><th>Test Type</th><th>Result</th><th>Date</th></tr>
-    <?php while ($row = $lab_results->fetch_assoc()): ?>
+    <?php while ($row = $lab_results->fetch_object()): ?>
     <tr>
-        <td><?php echo htmlspecialchars($row['test_type']); ?></td>
-        <td><?php echo nl2br(htmlspecialchars($row['result_data'])); ?></td>
-        <td><?php echo date('d M Y', strtotime($row['result_date'])); ?></td>
+        <td><?php echo htmlspecialchars($row->test_type); ?></td>
+        <td><?php echo nl2br(htmlspecialchars($row->result_data)); ?></td>
+        <td><?php echo date('d M Y', strtotime($row->result_date)); ?></td>
     </tr>
     <?php endwhile; ?>
 </table>
